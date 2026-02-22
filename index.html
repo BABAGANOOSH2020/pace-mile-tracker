@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PACE — Mile Performance Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #c8f542;
+    --accent2: #42f5a7;
+    --text: #f0f0f0;
+    --muted: #666;
+    --danger: #f54242;
+    --warn: #f5a742;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(200,245,66,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,245,66,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 56px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(200,245,66,0.3);
+  }
+
+  .logo span {
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 2px;
+    display: block;
+    font-weight: 300;
+    margin-bottom: 4px;
+    color: var(--muted);
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 32px;
+    align-items: flex-end;
+  }
+
+  .stat-pill {
+    text-align: right;
+  }
+
+  .stat-pill .val {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 32px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+
+  .stat-pill .lbl {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 32px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 4px;
+    width: fit-content;
+  }
+
+  .tab {
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: all 0.2s;
+    border: none;
+    background: none;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 500;
+  }
+
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Log Form */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .field-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .field-group:hover { border-color: #3a3a3a; }
+
+  .field-group.accent-group {
+    border-color: rgba(200,245,66,0.3);
+    background: rgba(200,245,66,0.03);
+  }
+
+  .group-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .group-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(200,245,66,0.2);
+  }
+
+  .field {
+    margin-bottom: 10px;
+  }
+
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(200,245,66,0.1);
+  }
+
+  select option { background: var(--surface2); }
+
+  /* Slider */
+  .slider-field { display: flex; align-items: center; gap: 10px; }
+
+  .slider-field input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    background: var(--border);
+    height: 4px;
+    border-radius: 2px;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .slider-field input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    min-width: 20px;
+    text-align: right;
+  }
+
+  /* Time input special */
+  .time-input-wrap {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .time-input-wrap input {
+    text-align: center;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    padding: 10px;
+  }
+
+  .time-sep {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 24px;
+    color: var(--muted);
+  }
+
+  /* Submit */
+  .submit-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .btn-primary:hover {
+    background: #d4f955;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(200,245,66,0.3);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: #444; }
+
+  /* Dashboard */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-grid { grid-template-columns: 1fr; }
+    header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .big-number {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 48px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .big-number.green { color: var(--accent2); }
+  .big-number.warn { color: var(--warn); }
+
+  .delta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  .delta.pos { color: var(--accent2); }
+  .delta.neg { color: var(--danger); }
+
+  /* Chart area */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    grid-column: 1 / -1;
+  }
+
+  canvas {
+    width: 100% !important;
+  }
+
+  /* Runs table */
+  .runs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .runs-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .runs-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(42,42,42,0.5);
+    vertical-align: middle;
+  }
+
+  .runs-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .time-badge {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--accent);
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    margin: 1px;
+  }
+
+  .tag-green { background: rgba(66,245,167,0.15); color: var(--accent2); }
+  .tag-yellow { background: rgba(200,245,66,0.15); color: var(--accent); }
+  .tag-red { background: rgba(245,66,66,0.15); color: var(--danger); }
+  .tag-gray { background: rgba(255,255,255,0.08); color: var(--muted); }
+
+  /* Insights */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .insight-card h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .factor-bar {
+    margin-bottom: 10px;
+  }
+
+  .factor-bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+    font-size: 11px;
+  }
+
+  .factor-bar-label span:last-child {
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+  }
+
+  .bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 0.6s ease;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  .empty-state p {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    font-weight: 500;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .pr-badge {
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .two-col { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } .insights-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span>// PERFORMANCE TRACKER</span>
+      PACE
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <div class="val" id="hdr-pr">—</div>
+        <div class="lbl">Personal Record</div>
+      </div>
+      <div class="stat-pill">
+        <div class="val" id="hdr-runs">0</div>
+        <div class="lbl">Runs Logged</div>
+      </div>
+      <div class="stat-pill">
+        <div class="val" id="hdr-avg">—</div>
+        <div class="lbl">Avg Mile</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('log')">Log Run</button>
+    <button class="tab" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab" onclick="switchTab('history')">History</button>
+    <button class="tab" onclick="switchTab('insights')">Insights</button>
+  </div>
+
+  <!-- LOG RUN PANEL -->
+  <div class="panel active" id="panel-log">
+
+    <div class="form-grid">
+
+      <!-- TIME & DATE — accent -->
+      <div class="field-group accent-group" style="grid-column: span 1;">
+        <div class="group-label">Mile Time + Date</div>
+        <div class="field">
+          <label>Mile Time</label>
+          <div class="time-input-wrap">
+            <input type="number" id="t-min" min="3" max="15" placeholder="5" style="width:70px">
+            <span class="time-sep">:</span>
+            <input type="number" id="t-sec" min="0" max="59" placeholder="30" style="width:70px">
+          </div>
+          <div style="font-size:10px; color:var(--muted); margin-top:4px; font-family:'DM Mono',monospace;">MIN : SEC</div>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label>Run Type</label>
+          <select id="f-runtype">
+            <option value="">Select...</option>
+            <option>Race</option>
+            <option>Time Trial</option>
+            <option>Workout</option>
+            <option>Easy Run</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Surface</label>
+          <select id="f-surface">
+            <option value="">Select...</option>
+            <option>Track (rubber)</option>
+            <option>Road</option>
+            <option>Trail</option>
+            <option>Grass</option>
+            <option>Treadmill</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Shoes</label>
+          <select id="f-shoes">
+            <option value="">Select...</option>
+            <option>Racing Flats / Supershoes</option>
+            <option>Trainers</option>
+            <option>Spikes</option>
+            <option>Cross Country Flats</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- BODY -->
+      <div class="field-group">
+        <div class="group-label">Body & Recovery</div>
+        <div class="field">
+          <label>Hours of Sleep</label>
+          <input type="number" id="f-sleep" min="1" max="12" step="0.5" placeholder="8">
+        </div>
+        <div class="field">
+          <label>Sleep Quality</label>
+          <div class="slider-field">
+            <input type="range" id="f-sleepq" min="1" max="10" value="7" oninput="updateSlider(this,'sv-sleepq')">
+            <span class="slider-val" id="sv-sleepq">7</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Resting Heart Rate (bpm)</label>
+          <input type="number" id="f-rhr" min="30" max="100" placeholder="50">
+        </div>
+        <div class="field">
+          <label>Muscle Soreness (1–10)</label>
+          <div class="slider-field">
+            <input type="range" id="f-sore" min="1" max="10" value="3" oninput="updateSlider(this,'sv-sore')">
+            <span class="slider-val" id="sv-sore">3</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Illness / Feeling Off (1–10)</label>
+          <div class="slider-field">
+            <input type="range" id="f-illness" min="1" max="10" value="1" oninput="updateSlider(this,'sv-illness')">
+            <span class="slider-val" id="sv-illness">1</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Days Since Last Hard Workout</label>
+          <input type="number" id="f-recovery" min="0" max="14" placeholder="2">
+        </div>
+        <div class="field">
+          <label>Weekly Mileage (past 7 days)</label>
+          <input type="number" id="f-mileage" min="0" max="100" placeholder="30">
+        </div>
+      </div>
+
+      <!-- NUTRITION -->
+      <div class="field-group">
+        <div class="group-label">Nutrition & Hydration</div>
+        <div class="field">
+          <label>Water Intake Today (oz)</label>
+          <input type="number" id="f-water" min="0" max="200" placeholder="80">
+        </div>
+        <div class="field">
+          <label>Pre-Run Meal (hrs before)</label>
+          <input type="number" id="f-mealtime" min="0" max="6" step="0.5" placeholder="2">
+        </div>
+        <div class="field">
+          <label>Pre-Run Food Type</label>
+          <select id="f-food">
+            <option value="">Select...</option>
+            <option>Carb-heavy (pasta, rice, bread)</option>
+            <option>Light snack (banana, bar)</option>
+            <option>Protein-heavy</option>
+            <option>Mixed meal</option>
+            <option>Fasted (nothing)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Night-Before Carb Load?</label>
+          <select id="f-carbload">
+            <option value="">Select...</option>
+            <option>Yes — heavy carbs</option>
+            <option>Yes — moderate carbs</option>
+            <option>No</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Caffeine (mg, 0 if none)</label>
+          <input type="number" id="f-caffeine" min="0" max="400" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Caffeine Timing (min before run)</label>
+          <input type="number" id="f-cafftiming" min="0" max="180" placeholder="45">
+        </div>
+        <div class="field">
+          <label>Total Calories Today (approx)</label>
+          <input type="number" id="f-cals" min="0" max="6000" placeholder="2200">
+        </div>
+      </div>
+
+      <!-- ENVIRONMENT -->
+      <div class="field-group">
+        <div class="group-label">Weather & Environment</div>
+        <div class="field">
+          <label>Temperature (°F)</label>
+          <input type="number" id="f-temp" min="-20" max="120" placeholder="65">
+        </div>
+        <div class="field">
+          <label>Humidity (%)</label>
+          <input type="number" id="f-humidity" min="0" max="100" placeholder="50">
+        </div>
+        <div class="field">
+          <label>Wind Speed (mph)</label>
+          <input type="number" id="f-wind" min="0" max="60" placeholder="5">
+        </div>
+        <div class="field">
+          <label>Wind Direction</label>
+          <select id="f-winddir">
+            <option value="">Select...</option>
+            <option>Headwind</option>
+            <option>Tailwind</option>
+            <option>Crosswind</option>
+            <option>Calm</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Season</label>
+          <select id="f-season">
+            <option value="">Select...</option>
+            <option>Spring</option>
+            <option>Summer</option>
+            <option>Fall / XC</option>
+            <option>Winter</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Time of Day</label>
+          <select id="f-timeofday">
+            <option value="">Select...</option>
+            <option>Early Morning (5–8am)</option>
+            <option>Morning (8–11am)</option>
+            <option>Midday (11am–2pm)</option>
+            <option>Afternoon (2–5pm)</option>
+            <option>Evening (5–8pm)</option>
+            <option>Night (8pm+)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Air Quality</label>
+          <select id="f-airq">
+            <option value="">Select...</option>
+            <option>Good</option>
+            <option>Moderate</option>
+            <option>Poor (smoke/pollen)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- MENTAL -->
+      <div class="field-group">
+        <div class="group-label">Mental & Warmup</div>
+        <div class="field">
+          <label>Stress Level (1–10)</label>
+          <div class="slider-field">
+            <input type="range" id="f-stress" min="1" max="10" value="3" oninput="updateSlider(this,'sv-stress')">
+            <span class="slider-val" id="sv-stress">3</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Motivation Before Run (1–10)</label>
+          <div class="slider-field">
+            <input type="range" id="f-motiv" min="1" max="10" value="7" oninput="updateSlider(this,'sv-motiv')">
+            <span class="slider-val" id="sv-motiv">7</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Warmup Duration (min)</label>
+          <input type="number" id="f-warmup" min="0" max="60" placeholder="15">
+        </div>
+        <div class="field">
+          <label>Warmup Quality</label>
+          <select id="f-warmupq">
+            <option value="">Select...</option>
+            <option>Full dynamic warmup</option>
+            <option>Light jog only</option>
+            <option>Minimal / none</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Altitude (ft above sea level)</label>
+          <input type="number" id="f-alt" min="0" max="15000" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Notes</label>
+          <textarea id="f-notes" rows="2" placeholder="Anything else notable about this run..."></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="submit-row">
+      <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+      <button class="btn btn-primary" onclick="saveRun()">Save Run →</button>
+    </div>
+
+  </div>
+
+  <!-- DASHBOARD PANEL -->
+  <div class="panel" id="panel-dashboard">
+    <div id="dashboard-empty" class="empty-state">
+      <div class="icon">📊</div>
+      <p>Log your first run to see your dashboard</p>
+    </div>
+    <div id="dashboard-content" style="display:none">
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-title">Personal Record</div>
+          <div class="big-number green" id="d-pr">—</div>
+          <div class="delta" id="d-pr-date"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Latest Mile</div>
+          <div class="big-number" id="d-latest">—</div>
+          <div class="delta" id="d-latest-delta"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Average Mile</div>
+          <div class="big-number warn" id="d-avg">—</div>
+          <div class="delta" id="d-runs-count"></div>
+        </div>
+        <div class="chart-card" style="grid-column: 1/-1;">
+          <div class="section-header">
+            <div class="section-title">Progress Over Time</div>
+          </div>
+          <canvas id="progressChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="panel" id="panel-history">
+    <div id="history-empty" class="empty-state">
+      <div class="icon">🏃</div>
+      <p>No runs logged yet. Start tracking!</p>
+    </div>
+    <div id="history-content" style="display:none">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">All Runs</div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="runs-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Conditions</th>
+                <th>Body</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="runs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS PANEL -->
+  <div class="panel" id="panel-insights">
+    <div id="insights-empty" class="empty-state">
+      <div class="icon">💡</div>
+      <p>Log 3+ runs to unlock performance insights</p>
+    </div>
+    <div id="insights-content" style="display:none">
+      <div class="insights-grid">
+        <div class="insight-card">
+          <h3>Best Conditions for You</h3>
+          <div id="best-conditions"></div>
+        </div>
+        <div class="insight-card">
+          <h3>Time of Day Performance</h3>
+          <div id="tod-chart"></div>
+        </div>
+        <div class="insight-card">
+          <h3>Sleep vs Performance</h3>
+          <div id="sleep-insight"></div>
+        </div>
+        <div class="insight-card">
+          <h3>Shoe Impact</h3>
+          <div id="shoe-insight"></div>
+        </div>
+        <div class="insight-card" style="grid-column: span 2;">
+          <h3>Factor Correlation (lower time = better)</h3>
+          <div id="factor-correlations"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let runs = JSON.parse(localStorage.getItem('pace_runs') || '[]');
+let chart = null;
+
+// Set today's date
+document.getElementById('f-date').valueAsDate = new Date();
+
+function updateSlider(el, id) {
+  document.getElementById(id).textContent = el.value;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['log','dashboard','history','insights'][i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'history') renderHistory();
+  if (tab === 'insights') renderInsights();
+}
+
+function secToTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+function timeToSec(m, s) { return parseInt(m||0)*60 + parseInt(s||0); }
+
+function saveRun() {
+  const min = document.getElementById('t-min').value;
+  const sec = document.getElementById('t-sec').value;
+  if (!min || !sec) { showToast('Enter your mile time!'); return; }
+  const totalSec = timeToSec(min, sec);
+  if (totalSec < 200 || totalSec > 900) { showToast('Time seems off — check min:sec'); return; }
+
+  const run = {
+    id: Date.now(),
+    date: document.getElementById('f-date').value,
+    timeSec: totalSec,
+    timeStr: `${min}:${sec.toString().padStart(2,'0')}`,
+    runType: document.getElementById('f-runtype').value,
+    surface: document.getElementById('f-surface').value,
+    shoes: document.getElementById('f-shoes').value,
+    sleep: document.getElementById('f-sleep').value,
+    sleepQ: document.getElementById('f-sleepq').value,
+    rhr: document.getElementById('f-rhr').value,
+    soreness: document.getElementById('f-sore').value,
+    illness: document.getElementById('f-illness').value,
+    recovery: document.getElementById('f-recovery').value,
+    weeklyMiles: document.getElementById('f-mileage').value,
+    water: document.getElementById('f-water').value,
+    mealTime: document.getElementById('f-mealtime').value,
+    food: document.getElementById('f-food').value,
+    carbLoad: document.getElementById('f-carbload').value,
+    caffeine: document.getElementById('f-caffeine').value,
+    caffTiming: document.getElementById('f-cafftiming').value,
+    calories: document.getElementById('f-cals').value,
+    temp: document.getElementById('f-temp').value,
+    humidity: document.getElementById('f-humidity').value,
+    wind: document.getElementById('f-wind').value,
+    windDir: document.getElementById('f-winddir').value,
+    season: document.getElementById('f-season').value,
+    timeOfDay: document.getElementById('f-timeofday').value,
+    airQ: document.getElementById('f-airq').value,
+    stress: document.getElementById('f-stress').value,
+    motivation: document.getElementById('f-motiv').value,
+    warmup: document.getElementById('f-warmup').value,
+    warmupQ: document.getElementById('f-warmupq').value,
+    altitude: document.getElementById('f-alt').value,
+    notes: document.getElementById('f-notes').value,
+  };
+
+  runs.push(run);
+  runs.sort((a,b) => new Date(a.date) - new Date(b.date));
+  localStorage.setItem('pace_runs', JSON.stringify(runs));
+  updateHeader();
+  showToast('Run saved! 🏃');
+  clearForm();
+}
+
+function deleteRun(id) {
+  runs = runs.filter(r => r.id !== id);
+  localStorage.setItem('pace_runs', JSON.stringify(runs));
+  updateHeader();
+  renderHistory();
+}
+
+function clearForm() {
+  ['t-min','t-sec','f-sleep','f-rhr','f-recovery','f-mileage','f-water',
+   'f-mealtime','f-caffeine','f-cafftiming','f-cals','f-temp','f-humidity',
+   'f-wind','f-warmup','f-alt','f-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['f-runtype','f-surface','f-shoes','f-food','f-carbload','f-season',
+   'f-timeofday','f-airq','f-winddir','f-warmupq'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.selectedIndex = 0;
+  });
+  document.getElementById('f-date').valueAsDate = new Date();
+  document.getElementById('f-sleepq').value = 7; document.getElementById('sv-sleepq').textContent = '7';
+  document.getElementById('f-sore').value = 3; document.getElementById('sv-sore').textContent = '3';
+  document.getElementById('f-illness').value = 1; document.getElementById('sv-illness').textContent = '1';
+  document.getElementById('f-stress').value = 3; document.getElementById('sv-stress').textContent = '3';
+  document.getElementById('f-motiv').value = 7; document.getElementById('sv-motiv').textContent = '7';
+}
+
+function updateHeader() {
+  if (!runs.length) return;
+  const pr = Math.min(...runs.map(r => r.timeSec));
+  const avg = Math.round(runs.reduce((a,b) => a + b.timeSec, 0) / runs.length);
+  document.getElementById('hdr-pr').textContent = secToTime(pr);
+  document.getElementById('hdr-runs').textContent = runs.length;
+  document.getElementById('hdr-avg').textContent = secToTime(avg);
+}
+
+function renderDashboard() {
+  if (!runs.length) {
+    document.getElementById('dashboard-empty').style.display = 'block';
+    document.getElementById('dashboard-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('dashboard-empty').style.display = 'none';
+  document.getElementById('dashboard-content').style.display = 'block';
+
+  const pr = Math.min(...runs.map(r => r.timeSec));
+  const prRun = runs.find(r => r.timeSec === pr);
+  const avg = Math.round(runs.reduce((a,b) => a + b.timeSec, 0) / runs.length);
+  const latest = runs[runs.length - 1];
+  const prev = runs.length > 1 ? runs[runs.length - 2] : null;
+
+  document.getElementById('d-pr').textContent = secToTime(pr);
+  document.getElementById('d-pr-date').innerHTML = `<span style="color:var(--muted)">${prRun.date}</span>`;
+  document.getElementById('d-latest').textContent = latest.timeStr;
+  document.getElementById('d-avg').textContent = secToTime(avg);
+  document.getElementById('d-runs-count').textContent = `from ${runs.length} runs`;
+
+  if (prev) {
+    const diff = prev.timeSec - latest.timeSec;
+    const el = document.getElementById('d-latest-delta');
+    if (diff > 0) {
+      el.innerHTML = `<span class="pos">▲ ${Math.abs(diff)}s faster than last run</span>`;
+    } else if (diff < 0) {
+      el.innerHTML = `<span class="neg">▼ ${Math.abs(diff)}s slower than last run</span>`;
+    } else {
+      el.innerHTML = `<span style="color:var(--muted)">Same as last run</span>`;
+    }
+  }
+
+  // Chart
+  const ctx = document.getElementById('progressChart').getContext('2d');
+  const labels = runs.map(r => r.date);
+  const data = runs.map(r => r.timeSec);
+  const prLine = runs.map(() => pr);
+
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Mile Time (sec)',
+          data,
+          borderColor: '#c8f542',
+          backgroundColor: 'rgba(200,245,66,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#c8f542',
+          pointRadius: 5,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: 'PR',
+          data: prLine,
+          borderColor: 'rgba(66,245,167,0.4)',
+          borderWidth: 1,
+          borderDash: [6,4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#666', font: { family: 'DM Mono', size: 10 } } },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a',
+          borderWidth: 1,
+          titleColor: '#c8f542',
+          bodyColor: '#f0f0f0',
+          callbacks: {
+            label: ctx => ` ${secToTime(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          reverse: true,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#666',
+            font: { family: 'DM Mono', size: 10 },
+            callback: v => secToTime(v)
+          }
+        },
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#666', font: { family: 'DM Mono', size: 10 }, maxRotation: 30 }
+        }
+      }
+    }
+  });
+}
+
+function renderHistory() {
+  if (!runs.length) {
+    document.getElementById('history-empty').style.display = 'block';
+    document.getElementById('history-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('history-empty').style.display = 'none';
+  document.getElementById('history-content').style.display = 'block';
+  const pr = Math.min(...runs.map(r => r.timeSec));
+  const tbody = document.getElementById('runs-tbody');
+  tbody.innerHTML = [...runs].reverse().map(r => {
+    const isPR = r.timeSec === pr;
+    const condTags = [r.temp ? `${r.temp}°F` : '', r.season, r.timeOfDay].filter(Boolean)
+      .map(t => `<span class="tag tag-gray">${t}</span>`).join('');
+    const bodyTags = [
+      r.sleep ? `<span class="tag ${+r.sleep >= 7 ? 'tag-green' : 'tag-red'}">💤 ${r.sleep}h</span>` : '',
+      r.water ? `<span class="tag tag-yellow">💧 ${r.water}oz</span>` : '',
+      r.soreness && +r.soreness >= 7 ? `<span class="tag tag-red">🦵 sore ${r.soreness}</span>` : '',
+    ].filter(Boolean).join('');
+
+    return `<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${r.date}</td>
+      <td>
+        <span class="time-badge">${r.timeStr}</span>
+        ${isPR ? '<span class="pr-badge" style="margin-left:6px">PR</span>' : ''}
+      </td>
+      <td><span class="tag tag-gray">${r.runType || '—'}</span> <span class="tag tag-gray">${r.shoes || '—'}</span></td>
+      <td>${condTags || '—'}</td>
+      <td>${bodyTags || '—'}</td>
+      <td><button onclick="deleteRun(${r.id})" style="background:none;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-family:'DM Mono',monospace">Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderInsights() {
+  if (runs.length < 3) {
+    document.getElementById('insights-empty').style.display = 'block';
+    document.getElementById('insights-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('insights-empty').style.display = 'none';
+  document.getElementById('insights-content').style.display = 'block';
+
+  // Best conditions
+  const bestRuns = [...runs].sort((a,b) => a.timeSec - b.timeSec).slice(0, Math.max(1, Math.floor(runs.length * 0.3)));
+  const bcEl = document.getElementById('best-conditions');
+  const avgTemp = bestRuns.filter(r=>r.temp).reduce((a,b)=>a+(+b.temp),0)/(bestRuns.filter(r=>r.temp).length||1);
+  const avgSleep = bestRuns.filter(r=>r.sleep).reduce((a,b)=>a+(+b.sleep),0)/(bestRuns.filter(r=>r.sleep).length||1);
+  const avgWater = bestRuns.filter(r=>r.water).reduce((a,b)=>a+(+b.water),0)/(bestRuns.filter(r=>r.water).length||1);
+  bcEl.innerHTML = `
+    <div class="factor-bar"><div class="factor-bar-label"><span>Avg Temp</span><span>${avgTemp.toFixed(0)}°F</span></div></div>
+    <div class="factor-bar"><div class="factor-bar-label"><span>Avg Sleep</span><span>${avgSleep.toFixed(1)}h</span></div></div>
+    <div class="factor-bar"><div class="factor-bar-label"><span>Avg Hydration</span><span>${avgWater.toFixed(0)} oz</span></div></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:12px;font-family:'DM Mono',monospace">Based on your top ${bestRuns.length} performance${bestRuns.length>1?'s':''}</p>
+  `;
+
+  // Time of day
+  const todMap = {};
+  runs.forEach(r => {
+    if (r.timeOfDay) {
+      if (!todMap[r.timeOfDay]) todMap[r.timeOfDay] = [];
+      todMap[r.timeOfDay].push(r.timeSec);
+    }
+  });
+  const todEl = document.getElementById('tod-chart');
+  if (Object.keys(todMap).length) {
+    const todAvgs = Object.entries(todMap).map(([k,v]) => ({
+      label: k, avg: Math.round(v.reduce((a,b)=>a+b,0)/v.length), count: v.length
+    })).sort((a,b) => a.avg - b.avg);
+    const minAvg = Math.min(...todAvgs.map(t=>t.avg));
+    todEl.innerHTML = todAvgs.map(t => `
+      <div class="factor-bar">
+        <div class="factor-bar-label">
+          <span style="font-size:10px">${t.label.split('(')[0].trim()}</span>
+          <span>${secToTime(t.avg)} <span style="color:var(--muted)">(${t.count})</span></span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((minAvg/t.avg)*100)}%"></div></div>
+      </div>
+    `).join('');
+  } else {
+    todEl.innerHTML = '<p style="color:var(--muted);font-size:11px;font-family:DM Mono,monospace">Log more runs with time of day to see this</p>';
+  }
+
+  // Sleep insight
+  const sleepEl = document.getElementById('sleep-insight');
+  const withSleep = runs.filter(r => r.sleep);
+  if (withSleep.length >= 2) {
+    const goodSleep = withSleep.filter(r => +r.sleep >= 7);
+    const badSleep = withSleep.filter(r => +r.sleep < 7);
+    if (goodSleep.length && badSleep.length) {
+      const gAvg = Math.round(goodSleep.reduce((a,b)=>a+b.timeSec,0)/goodSleep.length);
+      const bAvg = Math.round(badSleep.reduce((a,b)=>a+b.timeSec,0)/badSleep.length);
+      const diff = bAvg - gAvg;
+      sleepEl.innerHTML = `
+        <div class="factor-bar"><div class="factor-bar-label"><span>7+ hours avg</span><span style="color:var(--accent2)">${secToTime(gAvg)}</span></div></div>
+        <div class="factor-bar"><div class="factor-bar-label"><span>Under 7h avg</span><span style="color:var(--danger)">${secToTime(bAvg)}</span></div></div>
+        <p style="margin-top:12px;font-size:11px;font-family:'DM Mono',monospace;color:${diff>0?'var(--danger)':'var(--accent2)'}">
+          ${diff > 0 ? `You run ${diff}s slower on less sleep` : `Sleep doesn't seem to hurt your times yet`}
+        </p>`;
+    } else {
+      sleepEl.innerHTML = '<p style="color:var(--muted);font-size:11px;font-family:DM Mono,monospace">Need runs with both good and bad sleep to compare</p>';
+    }
+  } else {
+    sleepEl.innerHTML = '<p style="color:var(--muted);font-size:11px;font-family:DM Mono,monospace">Log more runs with sleep data</p>';
+  }
+
+  // Shoe insight
+  const shoeEl = document.getElementById('shoe-insight');
+  const shoeMap = {};
+  runs.forEach(r => {
+    if (r.shoes) {
+      if (!shoeMap[r.shoes]) shoeMap[r.shoes] = [];
+      shoeMap[r.shoes].push(r.timeSec);
+    }
+  });
+  if (Object.keys(shoeMap).length >= 2) {
+    const shoeAvgs = Object.entries(shoeMap).map(([k,v]) => ({
+      label: k, avg: Math.round(v.reduce((a,b)=>a+b,0)/v.length), count: v.length
+    })).sort((a,b) => a.avg - b.avg);
+    const minA = shoeAvgs[0].avg;
+    shoeEl.innerHTML = shoeAvgs.map(s => `
+      <div class="factor-bar">
+        <div class="factor-bar-label">
+          <span style="font-size:10px">${s.label}</span>
+          <span>${secToTime(s.avg)}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((minA/s.avg)*100)}%"></div></div>
+      </div>
+    `).join('');
+  } else {
+    shoeEl.innerHTML = '<p style="color:var(--muted);font-size:11px;font-family:DM Mono,monospace">Log runs in different shoes to compare</p>';
+  }
+
+  // Factor correlations
+  const factors = [
+    { key: 'sleep', label: 'Sleep Hours', dir: 'more = better' },
+    { key: 'water', label: 'Hydration (oz)', dir: 'more = better' },
+    { key: 'temp', label: 'Temperature', dir: 'sweet spot' },
+    { key: 'stress', label: 'Stress Level', dir: 'less = better' },
+    { key: 'motivation', label: 'Motivation', dir: 'more = better' },
+    { key: 'soreness', label: 'Soreness', dir: 'less = better' },
+    { key: 'caffeine', label: 'Caffeine (mg)', dir: 'moderate = better' },
+    { key: 'humidity', label: 'Humidity (%)', dir: 'less = better' },
+  ];
+  const fcEl = document.getElementById('factor-correlations');
+  const runsWithData = runs.filter(r => r.timeSec);
+  const corrItems = factors.map(f => {
+    const pairs = runsWithData.filter(r => r[f.key] !== '' && r[f.key] !== undefined && r[f.key] !== null)
+      .map(r => ({ x: +r[f.key], y: r.timeSec }));
+    if (pairs.length < 3) return null;
+    const n = pairs.length;
+    const mx = pairs.reduce((a,b)=>a+b.x,0)/n;
+    const my = pairs.reduce((a,b)=>a+b.y,0)/n;
+    const num = pairs.reduce((a,b)=>a+(b.x-mx)*(b.y-my),0);
+    const den = Math.sqrt(pairs.reduce((a,b)=>a+(b.x-mx)**2,0)*pairs.reduce((a,b)=>a+(b.y-my)**2,0));
+    const corr = den ? num/den : 0;
+    return { ...f, corr: corr.toFixed(2), n };
+  }).filter(Boolean).sort((a,b) => Math.abs(b.corr) - Math.abs(a.corr));
+
+  if (corrItems.length) {
+    fcEl.innerHTML = corrItems.map(c => {
+      const strength = Math.abs(+c.corr);
+      const pct = Math.round(strength * 100);
+      const isPos = +c.corr > 0;
+      // positive corr = factor increases → time increases (worse)
+      const interpretation = isPos ? '↑ tends to slow you' : '↑ tends to speed you';
+      return `
+        <div class="factor-bar" style="margin-bottom:14px">
+          <div class="factor-bar-label">
+            <span>${c.label} <span style="color:var(--muted);font-size:10px">(${c.n} data pts)</span></span>
+            <span style="color:${Math.abs(+c.corr) > 0.3 ? (isPos ? 'var(--danger)' : 'var(--accent2)') : 'var(--muted)'}">${c.corr} — ${interpretation}</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%;background:${isPos ? 'linear-gradient(90deg,var(--warn),var(--danger))' : 'linear-gradient(90deg,var(--accent2),var(--accent))'}"></div>
+          </div>
+        </div>`;
+    }).join('');
+    fcEl.innerHTML += `<p style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:8px">Correlation coefficient: ±1.0 = strong, 0 = no relationship. Log more runs for accuracy.</p>`;
+  } else {
+    fcEl.innerHTML = '<p style="color:var(--muted);font-size:11px;font-family:DM Mono,monospace">Log more runs with factor data to see correlations</p>';
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Init
+updateHeader();
+</script>
+</body>
+</html> Add PACE mile tracker app
